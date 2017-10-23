@@ -10,5 +10,6 @@ lazy val root = (project in file(".")).
     name := "Hello"
   )
 
+scalacOptions += "-Xcomp"
 
 enablePlugins(JavaAppPackaging)

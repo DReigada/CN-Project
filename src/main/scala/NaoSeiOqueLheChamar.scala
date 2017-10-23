@@ -1,5 +1,6 @@
 import java.io.{BufferedOutputStream, FileOutputStream}
 
+import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 import scala.util.matching.Regex
@@ -14,8 +15,13 @@ object NaoSeiOqueLheChamar extends App {
   val lines: Stream[String] = Source.fromFile(inputFile).getLines().toStream
 
 
-  val stream = lines
-    .map(Line.apply)
+  val target = new BufferedOutputStream(new FileOutputStream(outputFile))
+
+  sys.addShutdownHook(target.close())
+
+
+  def stream = Source.fromFile(inputFile)
+    .getLines().toStream.map(Line.apply)
     .filter { line =>
       val isValid = Try(line.user.nonEmpty && line.sub.nonEmpty).toOption.exists(identity)
       if (!isValid) {
@@ -24,9 +30,6 @@ object NaoSeiOqueLheChamar extends App {
       isValid
     }
     .chopBy(_.sub)
-
-
-  val t = stream
     .flatMap { subreddit =>
       for {
         user1 <- subreddit
@@ -37,13 +40,16 @@ object NaoSeiOqueLheChamar extends App {
     }
     .map(_.toCsv)
 
+  consume(stream)
 
-  val target = new BufferedOutputStream(new FileOutputStream(outputFile))
-
-  sys.addShutdownHook(target.close())
-
-  val attempt = Try {
-    t.foreach(str => target.write(str.getBytes))
+  @tailrec
+  def consume(xs: Stream[String]): Unit = {
+    if (xs.isEmpty) {
+      ()
+    } else {
+      target.write(xs.head.getBytes())
+      consume(xs.tail)
+    }
   }
 
   target.close()
