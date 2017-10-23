@@ -1,0 +1,1 @@
+math.log(1+1) + math.log(1+1)
