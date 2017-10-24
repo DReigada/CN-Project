@@ -1,6 +1,6 @@
 # projects specific
 testOut/
-
+*.sc
 
 # Created by .ignore support plugin (hsz.mobi)
 ### SBT template

@@ -1,27 +1,24 @@
 import java.io.{BufferedOutputStream, FileOutputStream}
 
-import scala.annotation.tailrec
 import scala.io.Source
 import scala.util.Try
 import scala.util.matching.Regex
 
 
-object NaoSeiOqueLheChamar extends App {
+object NaoSeiOqueLheChamar extends App with Helpers {
 
   val regex: Regex = """(.*),(.*),(\d*)""".r
 
   val inputFile = args(0)
   val outputFile = args(1)
-  val lines: Stream[String] = Source.fromFile(inputFile).getLines().toStream
 
-
-  val target = new BufferedOutputStream(new FileOutputStream(outputFile))
+  val target = outputStreamFromFile(outputFile)
 
   sys.addShutdownHook(target.close())
 
 
-  def stream = Source.fromFile(inputFile)
-    .getLines().toStream.map(Line.apply)
+  def stream = streamFromFile(inputFile)
+    .map(Line.apply)
     .filter { line =>
       val isValid = Try(line.user.nonEmpty && line.sub.nonEmpty).toOption.exists(identity)
       if (!isValid) {
@@ -40,21 +37,9 @@ object NaoSeiOqueLheChamar extends App {
     }
     .map(_.toCsv)
 
-  consume(stream)
-
-  @tailrec
-  def consume(xs: Stream[String]): Unit = {
-    if (xs.isEmpty) {
-      ()
-    } else {
-      target.write(xs.head.getBytes())
-      consume(xs.tail)
-    }
-  }
+  writeStreamTo(stream, target)
 
   target.close()
-
-  //  attempt.get
 
   case class Line(str: String) {
     lazy val (user, sub, count) = str match {
@@ -72,15 +57,6 @@ object NaoSeiOqueLheChamar extends App {
     }
   }
 
-  implicit class StreamChopOps[T](xs: Stream[T]) {
-    def chopBy[U](f: T => U): Stream[Stream[T]] = xs match {
-      case x #:: _ =>
-        def eq(e: T) = f(e) == f(x)
-
-        xs.takeWhile(eq) #:: xs.dropWhile(eq).chopBy(f)
-      case _ => Stream.empty
-    }
-  }
 
 }
 
