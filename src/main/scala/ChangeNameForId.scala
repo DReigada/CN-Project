@@ -1,4 +1,7 @@
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.util.Try
 import scala.util.matching.Regex
 
 object ChangeNameForId extends App with Helpers {
@@ -7,38 +10,49 @@ object ChangeNameForId extends App with Helpers {
   val usersWithIDFile = args(1)
   val fileToChange = args(2)
   val outputFile = args(3)
+  val drop = Try(args(4)).toOption.fold(0)(_.toInt)
 
-  // Consistency FTW <3
-  val subsRegex: Regex =
-    """(.*),(\d*)""".r
-  val usersRegex: Regex = """(\d*),(.*)""".r
+  val subsRegex: Regex = """(\d*),(.*)""".r
   val fileToChangeRegex: Regex = """(.*),(.*),(\d*)""".r
 
-  val subsMap = mapFromFile(subsWithIDFile, { case subsRegex(subName, id) => subName -> id.toLong })
-  val usersMap = mapFromFile(usersWithIDFile, { case usersRegex(id, subName) => subName -> id.toLong })
+  val subsMap = getMapFromFile(subsWithIDFile, { case subsRegex(id, subName) => subName -> id.toLong })
+  println(s"Done importing subs Ids. Size: ${subsMap.size}")
 
-  println("Done importing Ids")
+  val usersMap = getMapFromFile(usersWithIDFile, { case subsRegex(id, subName) => subName -> id.toLong })
+  println(s"Done importing users Ids. Size: ${usersMap.size}")
 
-  def stream = streamFromFile(fileToChange)
+  val outputStream = outputStreamFromFile(outputFile)
+  writeStreamTo(stream.drop(drop), outputStream)
+  outputStream.close()
+
+  private def stream = streamFromFile(fileToChange)
     .collect {
-      case fileToChangeRegex(userR, subR, countR) if userR != "--tech" => (usersMap(userR), subsMap(subR), countR.toLong)
+      case fileToChangeRegex(userR, subR, countR) => (usersMap(userR), subsMap(subR), countR.toLong)
     }
     .map((toCsv _).tupled)
 
-  val outputStream = outputStreamFromFile(outputFile)
-  writeStreamTo(stream, outputStream)
-  outputStream.close()
+  // The map is mutable for efficiency reasons
+  private def getMapFromFile(file: String, f: PartialFunction[(String), (String, Long)]): mutable.Map[String, Long] = {
+    val map = mutable.HashMap.empty[String, Long]
+    consume(streamFromFile(file).collect(f), map)
+    map
+  }
 
-  def mapFromFile(file: String, f: PartialFunction[(String), (String, Long)]) = {
-    streamFromFile(file)
-      .collect(f)
-      .foldLeft(Map.empty[String, Long]) {
-        case (map, tuple) => map.+(tuple)
+  @tailrec
+  private def consume(xs: Stream[(String, Long)], map: mutable.Map[String, Long], i: Long = 0): mutable.Map[String, Long] = {
+    if (xs.isEmpty) {
+      map
+    } else {
+      if (i % 100000 == 0) { // this is just to track the progress
+        println(i)
       }
+      map.+=(xs.head)
+      consume(xs.tail, map, i + 1)
+    }
   }
 
 
-  def toCsv(user: Long, sub: Long, weight: Long): String = {
+  private def toCsv(user: Long, sub: Long, weight: Long): String = {
     s"$user,$sub,$weight\n"
   }
 
