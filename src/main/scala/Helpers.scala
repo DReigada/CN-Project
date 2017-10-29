@@ -4,17 +4,17 @@ import scala.annotation.tailrec
 import scala.io.Source
 
 trait Helpers {
+  @tailrec
+  final def chopBy[T, U](xs: Stream[T])(f: T => U)(app: Stream[T] => Unit): Unit = xs match {
+    case x #:: _ =>
+      def eq(e: T) = f(e) == f(x)
 
+      app(xs.takeWhile(eq))
 
-  implicit class StreamChopOps[T](xs: Stream[T]) {
-    def chopBy[U](f: T => U): Stream[Stream[T]] = xs match {
-      case x #:: _ =>
-        def eq(e: T) = f(e) == f(x)
-
-        xs.takeWhile(eq) #:: xs.dropWhile(eq).chopBy(f)
-      case _ => Stream.empty
-    }
+      chopBy(xs.dropWhile(eq))(f)(app)
+    case _ => ()
   }
+
 
   def outputStreamFromFile(file: String): OutputStream = {
     new BufferedOutputStream(new FileOutputStream(file))
@@ -25,7 +25,7 @@ trait Helpers {
   }
 
   @tailrec
-  final def writeStreamTo(xs: Stream[String], output: OutputStream): Unit = {
+  final def writeStreamTo(xs: Seq[String], output: OutputStream): Unit = {
     if (xs.isEmpty) {
       ()
     } else {
