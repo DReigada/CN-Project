@@ -1,7 +1,11 @@
+package part1
+
+import helpers.Helpers
+
 import scala.util.matching.Regex
 
 
-object CreateUserBuckets extends App with Helpers {
+object SubToSubEdgesGenerator extends App with Helpers {
 
   val regex: Regex = """(\d*),(\d*),(\d*)""".r
 
@@ -19,19 +23,20 @@ object CreateUserBuckets extends App with Helpers {
     .map(Line.apply)
     .filter { line => line.user != 6335974L } // filter [deleted] user, TODO: this should not be hardcoded
 
-  chopByWithValue(stream)(_.user) { (user, lines) =>
+  chopBy(stream)(_.user) { subreddit =>
     userCount += 1
     if (userCount % 10000 == 0) { // this is just to track the progress
       println(userCount)
     }
 
-    // buckets with only one item don't really matter
-    if(lines.size > 1) {
-      val userSubs = lines.map(_.sub).mkString(" ")
+    def t = (for {
+      user1 <- subreddit
+      user2 <- subreddit if user1.sub != user2.sub
+    } yield {
+      SubredditRelation(user1.sub, user2.sub, math.log(user1.count) + math.log(user2.count))
+    }).map(_.toCsv)
 
-      val newLine = s"$user: $userSubs\n"
-      writeStreamTo(Seq(newLine), target)
-    }
+    writeStreamTo(t, target)
   }
 
   target.close()
@@ -41,6 +46,17 @@ object CreateUserBuckets extends App with Helpers {
       case regex(userR, subR, countR) => (userR.toLong, subR.toLong, countR.toLong)
     }
   }
+
+  case class SubredditRelation(sub1: Long, sub2: Long, weight: Double) {
+    def toCsv: String = {
+      if (sub1 < sub2) {
+        s"$sub1,$sub2,$weight\n"
+      } else {
+        s"$sub2,$sub1,$weight\n"
+      }
+    }
+  }
+
 
 }
 

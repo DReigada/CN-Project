@@ -1,3 +1,5 @@
+package helpers
+
 import java.io.{BufferedOutputStream, FileOutputStream, OutputStream}
 
 import scala.annotation.tailrec
