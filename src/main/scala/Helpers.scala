@@ -15,6 +15,17 @@ trait Helpers {
     case _ => ()
   }
 
+  @tailrec
+  final def chopByWithValue[T, U](xs: Stream[T])(f: T => U)(app: (U, Stream[T]) => Unit): Unit = xs match {
+    case x #:: _ =>
+      def eq(e: T) = f(e) == f(x)
+
+      app(f(x), xs.takeWhile(eq))
+
+      chopByWithValue(xs.dropWhile(eq))(f)(app)
+    case _ => ()
+  }
+
 
   def outputStreamFromFile(file: String): OutputStream = {
     new BufferedOutputStream(new FileOutputStream(file))
