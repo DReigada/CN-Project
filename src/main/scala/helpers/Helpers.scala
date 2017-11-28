@@ -37,6 +37,10 @@ trait Helpers {
     Source.fromFile(file).getLines().toStream
   }
 
+  def writeToStream(output: OutputStream)(line: String): Unit = {
+    output.write(line.getBytes())
+  }
+
   @tailrec
   final def writeStreamTo(xs: Seq[String], output: OutputStream): Unit = {
     if (xs.isEmpty) {
