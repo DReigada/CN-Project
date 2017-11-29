@@ -14,7 +14,7 @@ This repository contains scripts to analyse the network of Users-Subreddits of [
     * Changes the Subreddit ids to names for the output of [this script](https://github.com/DReigada/RC-Project-Spark/blob/master/src/main/scala/rc/GenerateAssociations.scala)
 
 ## Requirements
-- JDK
+- Java 8 JDK
 - scala (https://www.scala-lang.org/)
 - sbt (http://www.scala-sbt.org/)
     
