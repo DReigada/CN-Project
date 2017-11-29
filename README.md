@@ -23,4 +23,4 @@ This repository contains scripts to analyse the network of Users-Subreddits of [
 
 1. Generate the binaries with `sbt universal:packageZipTarball`
 2. Uncompress the generated file located at `target/universal/cn-project-0.1.0-SNAPSHOT.tgz`
-3. Run the script inside `<extractedDirectory>/bin` that has the same name has the scala script you want to run
+3. Run the script inside `<extractedDirectory>/bin` that has the same name as the scala script you want to run
